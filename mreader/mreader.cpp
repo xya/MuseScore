@@ -1,4 +1,5 @@
 #include <QPainter>
+#include <QScreen>
 #include <cmath>
 #include "mreader.h"
 #include "libmscore/element.h"
@@ -16,10 +17,11 @@ int main(int argc, char **argv)
         return 1;
     }
     
+    QScreen *screen = App.primaryScreen();
     QString path(argv[1]);
     Ms::MScore MSApp;
-    Ms::MScore::DPI  = 120;
-    Ms::MScore::PDPI = 120;
+    Ms::MScore::DPI = screen->logicalDotsPerInch();
+    Ms::MScore::PDPI = Ms::MScore::DPI;
     MSApp.init();
     ScoreWidget View(MSApp);
     if (!View.loadScore(path))
@@ -93,7 +95,7 @@ void ScoreWidget::updateLayout(QSize viewSize)
     double heightInch = viewSize.height() / Ms::MScore::DPI;
     double f  = 1.0 / Ms::INCH;
     double marginMm = 10.0;
-    double staffSpaceMm = m_scale * 1.5;
+    double staffSpaceMm = m_scale * 2.0;
 
     Ms::PageFormat pf;
     pf.setEvenTopMargin(marginMm * f);
