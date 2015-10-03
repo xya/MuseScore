@@ -77,8 +77,8 @@ void ScoreWidget::setPageIndex(int newIndex)
 
 void ScoreWidget::updateLayout(QSize viewSize)
 {
-    double widthInch = viewSize.width() / (double)Ms::MScore::DPI;
-    double heightInch = viewSize.height() / (double)Ms::MScore::DPI;
+    double widthInch = viewSize.width() / Ms::MScore::DPI;
+    double heightInch = viewSize.height() / Ms::MScore::DPI;
     double f  = 1.0 / Ms::INCH;
     double marginMm = 10.0;
     double staffSpaceMm = 1.5;
@@ -97,6 +97,7 @@ void ScoreWidget::updateLayout(QSize viewSize)
     m_score->setPageFormat(pf);
     m_score->style()->setSpatium(staffSpaceMm * f * Ms::MScore::DPI);
     m_score->setPrinting(true);
+    m_score->setLayoutAll(true);
     m_score->update();
 }
 
@@ -142,7 +143,7 @@ void ScoreWidget::paint(const QRect& r, QPainter& p)
     if (m_score->pages().size() > m_pageIdx)
     {
         Ms::Page *page = m_score->pages().at(m_pageIdx);
-        QRectF bounds = page->abbox();
+        QRectF bounds = page->bbox();
         QList<Ms::Element*> ell = page->items(bounds);
         //unsigned numSystems = page->systems()->size();
         //qDebug("Systems: %d, elements: %d W: %f, H: %f", numSystems, ell.size(),
