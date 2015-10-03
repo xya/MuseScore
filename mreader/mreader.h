@@ -36,6 +36,7 @@ private:
   Ms::MScore &m_app;
   Ms::Score *m_score;
   double m_mag;
+  unsigned m_pageIdx;
   QTransform m_matrix;
   QTransform m_imatrix;
 };
