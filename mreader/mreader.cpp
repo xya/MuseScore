@@ -25,6 +25,8 @@ int main(int argc, char **argv)
     {
         return 1;
     }
+    View.setWindowTitle("MuseReader");
+    View.setWindowState(Qt::WindowMaximized);
     View.show();
     App.exec();
     return 0;
@@ -129,14 +131,6 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
     vp.setClipping(false);
 }
 
-static void addElementToList(void *data, Ms::Element *el)
-{
-    if (!data)
-        return;
-    QList<Ms::Element*> *ell = reinterpret_cast<QList<Ms::Element*> *>(data);
-    ell->append(el);
-}
-
 void ScoreWidget::paint(const QRect& r, QPainter& p)
 {
     p.save();
@@ -150,8 +144,7 @@ void ScoreWidget::paint(const QRect& r, QPainter& p)
         Ms::Page *page = m_score->pages().at(m_pageIdx);
         QRectF bounds = page->abbox();
         QList<Ms::Element*> ell = page->items(bounds);
-        page->scanElements(&ell, addElementToList);
-        unsigned numSystems = page->systems()->size();
+        //unsigned numSystems = page->systems()->size();
         //qDebug("Systems: %d, elements: %d W: %f, H: %f", numSystems, ell.size(),
         //       bounds.width(), bounds.height());
         qStableSort(ell.begin(), ell.end(), Ms::elementLessThan);
