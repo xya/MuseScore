@@ -36,7 +36,7 @@ macro( precompiled_header includes header_name build_pch)
             set (PCH ${PROJECT_BINARY_DIR}/${header_name}.h.gch)
             add_custom_command(
              OUTPUT ${PROJECT_BINARY_DIR}/${header_name}.h.gch
-             COMMAND ${CMAKE_CXX_COMPILER} -x c++-header -g  ${compile_flags} -o ${header_name}.h.gch ${header_name}.h
+             COMMAND ${CMAKE_CXX_COMPILER} -x c++-header -g  ${compile_flags} -fPIC -o ${header_name}.h.gch ${header_name}.h
              DEPENDS ${PROJECT_BINARY_DIR}/${header_name}.h
              WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
              VERBATIM

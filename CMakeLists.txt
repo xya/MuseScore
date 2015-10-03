@@ -511,6 +511,7 @@ add_subdirectory(mtest)
 else(APPLE AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
 add_subdirectory(mtest EXCLUDE_FROM_ALL)
 endif(APPLE AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
+add_subdirectory(mreader)
 
 add_subdirectory(rdoc EXCLUDE_FROM_ALL)
 add_subdirectory(miditools EXCLUDE_FROM_ALL)
