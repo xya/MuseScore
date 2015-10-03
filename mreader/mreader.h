@@ -24,19 +24,25 @@ public:
   ScoreWidget(Ms::MScore &App);
   virtual ~ScoreWidget();
   
+  int pageIndex() const { return m_pageIdx; }
+  void setPageIndex(int newIndex);
+  
   bool loadScore(QString path);
   
 protected:
   virtual void paintEvent(QPaintEvent*);
+  virtual void resizeEvent(QResizeEvent*);
+  virtual void keyReleaseEvent(QKeyEvent*);
   
 private:
+  void updateLayout(QSize viewSize);
   void paint(const QRect& r, QPainter& p);
   void drawElements(QPainter &painter, const QList<Ms::Element*> &el);
   
   Ms::MScore &m_app;
   Ms::Score *m_score;
   double m_mag;
-  unsigned m_pageIdx;
+  int m_pageIdx;
   QTransform m_matrix;
   QTransform m_imatrix;
 };
