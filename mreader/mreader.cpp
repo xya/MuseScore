@@ -37,9 +37,6 @@ int main(int argc, char **argv)
 ScoreWidget::ScoreWidget(Ms::MScore &App) : QWidget(), m_app(App), m_score(nullptr)
 {
     m_pageIdx = 0;
-    m_mag  = 1.0;
-    m_matrix = QTransform(m_mag, 0.0, 0.0, m_mag, 0.0, 0.0);
-    m_imatrix = m_matrix.inverted();
 }
 
 ScoreWidget::~ScoreWidget()
@@ -121,14 +118,12 @@ void ScoreWidget::resizeEvent(QResizeEvent *e)
 void ScoreWidget::paintEvent(QPaintEvent *e)
 {
     if (!m_score)
-          return;
+        return;
+    
     QPainter vp(this);
     vp.setRenderHint(QPainter::Antialiasing, true);
     vp.setRenderHint(QPainter::TextAntialiasing, true);
-
     paint(e->rect(), vp);
-
-    vp.setTransform(m_matrix);
     vp.setClipping(false);
 }
 
@@ -136,8 +131,6 @@ void ScoreWidget::paint(const QRect& r, QPainter& p)
 {
     p.save();
     p.fillRect(r, QColor("white"));
-    
-    p.setTransform(m_matrix);
 
     //qDebug("Pages: %d",  m_score->pages().size());
     if (m_score->pages().size() > m_pageIdx)
@@ -149,23 +142,16 @@ void ScoreWidget::paint(const QRect& r, QPainter& p)
         //qDebug("Systems: %d, elements: %d W: %f, H: %f", numSystems, ell.size(),
         //       bounds.width(), bounds.height());
         qStableSort(ell.begin(), ell.end(), Ms::elementLessThan);
-        drawElements(p, ell);
+        for (const Ms::Element* e : ell)
+        {
+            e->itemDiscovered = 0;
+            if (!e->visible())
+                continue;
+            QPointF pos(e->pagePos());
+            p.translate(pos);
+            e->draw(&p);
+            p.translate(-pos);
+        }
     }
     p.restore();
-}
-
-void ScoreWidget::drawElements(QPainter &painter, const QList<Ms::Element*> &el)
-{
-    unsigned i = 0;
-    for (const Ms::Element* e : el)
-    {
-        e->itemDiscovered = 0;
-        if (!e->visible())
-            continue;
-        QPointF pos(e->pagePos());
-        painter.translate(pos);
-        e->draw(&painter);
-        painter.translate(-pos);
-        i++;
-    }
 }

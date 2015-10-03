@@ -37,14 +37,10 @@ protected:
 private:
   void updateLayout(QSize viewSize);
   void paint(const QRect& r, QPainter& p);
-  void drawElements(QPainter &painter, const QList<Ms::Element*> &el);
   
   Ms::MScore &m_app;
   Ms::Score *m_score;
-  double m_mag;
   int m_pageIdx;
-  QTransform m_matrix;
-  QTransform m_imatrix;
 };
 
 #endif
