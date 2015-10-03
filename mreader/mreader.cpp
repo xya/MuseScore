@@ -1,4 +1,5 @@
 #include <QPainter>
+#include <cmath>
 #include "mreader.h"
 #include "libmscore/element.h"
 #include "libmscore/page.h"
@@ -37,6 +38,7 @@ int main(int argc, char **argv)
 ScoreWidget::ScoreWidget(Ms::MScore &App) : QWidget(), m_app(App), m_score(nullptr)
 {
     m_pageIdx = 0;
+    m_scale = 1.0;
 }
 
 ScoreWidget::~ScoreWidget()
@@ -72,13 +74,26 @@ void ScoreWidget::setPageIndex(int newIndex)
     }
 }
 
+void ScoreWidget::setScale(double newScale)
+{
+    if (newScale <= 0.0)
+        return;
+    if (std::fabs(newScale - m_scale) > 1e-3)
+    {
+        qDebug("New scale %f", newScale);
+        m_scale = newScale;
+        updateLayout(size());
+        update();
+    }
+}
+
 void ScoreWidget::updateLayout(QSize viewSize)
 {
     double widthInch = viewSize.width() / Ms::MScore::DPI;
     double heightInch = viewSize.height() / Ms::MScore::DPI;
     double f  = 1.0 / Ms::INCH;
     double marginMm = 10.0;
-    double staffSpaceMm = 1.5;
+    double staffSpaceMm = m_scale * 1.5;
 
     Ms::PageFormat pf;
     pf.setEvenTopMargin(marginMm * f);
@@ -108,6 +123,11 @@ void ScoreWidget::keyReleaseEvent(QKeyEvent *e)
     {
         setPageIndex(m_pageIdx - 1);
     }
+}
+
+void ScoreWidget::wheelEvent(QWheelEvent *e)
+{
+     setScale(m_scale + e->delta() / 1200.0);
 }
 
 void ScoreWidget::resizeEvent(QResizeEvent *e)

@@ -27,12 +27,16 @@ public:
   int pageIndex() const { return m_pageIdx; }
   void setPageIndex(int newIndex);
   
+  double scale() const { return m_scale; }
+  void setScale(double newScale);
+  
   bool loadScore(QString path);
   
 protected:
   virtual void paintEvent(QPaintEvent*);
   virtual void resizeEvent(QResizeEvent*);
   virtual void keyReleaseEvent(QKeyEvent*);
+  virtual void wheelEvent(QWheelEvent*);
   
 private:
   void updateLayout(QSize viewSize);
@@ -41,6 +45,7 @@ private:
   Ms::MScore &m_app;
   Ms::Score *m_score;
   int m_pageIdx;
+  double m_scale;
 };
 
 #endif
