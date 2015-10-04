@@ -53,7 +53,6 @@ public:
   
   // Whether to disaply one or two pages at the same time.
   bool isTwoSided() const { return m_twoSided; }
-  void setTwoSided(bool newVal);
   
   // Page size.
   QSizeF pageSize() const { return m_pageSize; }
@@ -86,6 +85,7 @@ public slots:
   void lastPage();
   void zoomIn();
   void zoomOut();
+  void setTwoSided(bool newVal);
   
 signals:
   void updated();
@@ -127,6 +127,7 @@ private:
   QAction *m_lastPage;
   QAction *m_zoomIn;
   QAction *m_zoomOut;
+  QAction *m_twoSided;
 };
 
 #endif

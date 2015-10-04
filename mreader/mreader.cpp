@@ -56,18 +56,23 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     m_lastPage = new QAction("Last page", this);
     m_zoomIn = new QAction("Zoom in", this);
     m_zoomOut = new QAction("Zoom out", this);
+    m_twoSided = new QAction("Two-sided layout", this);
     m_previousPage->setShortcut(QKeySequence::MoveToPreviousPage);
     m_nextPage->setShortcut(QKeySequence::MoveToNextPage);
     m_firstPage->setShortcut(QKeySequence::MoveToStartOfDocument);
     m_lastPage->setShortcut(QKeySequence::MoveToEndOfDocument);
     m_zoomIn->setShortcut(QKeySequence::ZoomIn);
     m_zoomOut->setShortcut(QKeySequence::ZoomOut);
+    m_twoSided->setShortcut(QKeySequence(Qt::Key_T));
+    m_twoSided->setCheckable(true);
+    m_twoSided->setChecked(Pager.isTwoSided());
     addAction(m_previousPage);
     addAction(m_nextPage);
     addAction(m_firstPage);
     addAction(m_lastPage);
     addAction(m_zoomIn);
     addAction(m_zoomOut);
+    addAction(m_twoSided);
     QObject::connect(m_previousPage, SIGNAL(triggered(bool)),
                      &Pager, SLOT(previousPage()));
     QObject::connect(m_nextPage, SIGNAL(triggered(bool)),
@@ -80,6 +85,8 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
                      &Pager, SLOT(zoomIn()));
     QObject::connect(m_zoomOut, SIGNAL(triggered(bool)),
                      &Pager, SLOT(zoomOut()));
+    QObject::connect(m_twoSided, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(setTwoSided(bool)));
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
 }
 
