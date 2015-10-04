@@ -91,7 +91,7 @@ public:
   QString title() const;
   
   // Part name.
-  QString partName() const;
+  QString partName() const { return m_partName; }
   
   // Load a score file.
   bool loadScore(QString path);
@@ -131,12 +131,14 @@ private:
   Ms::MScore &m_app;
   std::unique_ptr<Ms::Score> m_score;
   std::unique_ptr<Ms::Score> m_workingScore;
+  QString m_partName;
   int m_partIdx;
   int m_pageIdx;
   double m_scale;
   QSizeF m_pageSize;
   bool m_twoSided;
   bool m_showInstrumentNames;
+  bool m_soloInstrument;
 };
 
 class ScoreWidget : public QWidget

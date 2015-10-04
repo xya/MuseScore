@@ -20,11 +20,13 @@
 #include <QAction>
 #include <QPainter>
 #include <QScreen>
+#include <QTextStream>
 #include <cmath>
 #include "mreader.h"
 #include "libmscore/element.h"
 #include "libmscore/excerpt.h"
 #include "libmscore/page.h"
+#include "libmscore/part.h"
 #include "libmscore/system.h"
 
 namespace Ms {
@@ -222,7 +224,8 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 ////////////////////////////////////////////////////////////////////////////////
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
-    m_app(App), m_twoSided(true), m_showInstrumentNames(true)
+    m_app(App), m_twoSided(true), m_showInstrumentNames(true),
+    m_soloInstrument(false)
 {
     m_partIdx = -1;
     m_pageIdx = 0;
@@ -239,15 +242,6 @@ QString ScorePager::title() const
     if (m_score)
     {
         return m_score->title();
-    }
-    return QString();
-}
-
-QString ScorePager::partName() const
-{
-    if (m_workingScore && (m_partIdx >= 0))
-    {
-        return m_score->excerpts().value(m_partIdx)->title();
     }
     return QString();
 }
@@ -340,17 +334,44 @@ void ScorePager::loadPart(int partIdx)
     Ms::Score *base = m_score.get();
     if (!base)
         return;
-    int numParts = base->excerpts().size();
-    if ((numParts > 0) && (partIdx >= 0))
+    int numExcerpts = base->excerpts().size();
+    int numParts = base->parts().size();
+    if ((numExcerpts > 0) && (partIdx >= 0))
     {
+        // Excerpts are called "Parts" in the MuseScore GUI.
+        // They can include multiple instruments.
+        m_partIdx = qMin(partIdx, numExcerpts - 1);
+        Ms::Excerpt *part = base->excerpts().value(m_partIdx);
+        base = part->partScore();
+        m_partName = part->title();
+        m_soloInstrument = false;
+    }
+    else if ((numParts > 0) && (partIdx >= 0))
+    {
+        // Parts are called "Instruments" in the MuseScore GUI.
+        // They can include multiple staves.
         m_partIdx = qMin(partIdx, numParts - 1);
-        base = base->excerpts().value(m_partIdx)->partScore();
+        Ms::Part *part = base->parts().value(m_partIdx);
+        m_partName = part->partName();
+        m_soloInstrument = true;
     }
     else
     {
         m_partIdx = -1;
+        m_partName.clear();
+        m_soloInstrument = false;
     }
     m_workingScore.reset(base->clone());
+    if (m_soloInstrument)
+    {
+        // Show a single instrument as a part by hiding other instruments.
+        QList<Ms::Part *> &parts = m_workingScore->parts();
+        for (int i = 0; i < parts.size(); i++)
+        {
+            Ms::Part *part = parts[i];
+            part->setShow(i == m_partIdx);
+        }
+    }
     emit partChanged();
     updateStyle();
 }
@@ -364,12 +385,12 @@ void ScorePager::updateStyle()
     style->set(Ms::StyleIdx::showFooter, false);
     style->set(Ms::StyleIdx::showHeader, false);
     style->set(Ms::StyleIdx::showPageNumber, false);
-    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument,
-               m_partIdx == -1);
+    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument, true);
     m_workingScore->setShowVBox(false);
     m_workingScore->setShowUnprintable(false);
     m_workingScore->setShowInvisible(false);
-    m_workingScore->setShowInstrumentNames(m_showInstrumentNames);
+    m_workingScore->setShowInstrumentNames(m_showInstrumentNames &&
+                                           !m_soloInstrument);
     updateLayout();
 }
 
