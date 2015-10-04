@@ -150,14 +150,11 @@ bool ScorePager::loadScore(QString path)
     style->set(Ms::StyleIdx::showFooter, false);
     style->set(Ms::StyleIdx::showHeader, false);
     style->set(Ms::StyleIdx::showPageNumber, false);
+    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument, true);
     m_workingScore = m_score->clone();
     m_workingScore->setShowVBox(false);
     m_workingScore->setShowUnprintable(false);
     m_workingScore->setShowInvisible(false);
-    if (m_workingScore->parts().size() < 2)
-    {
-        m_workingScore->setShowInstrumentNames(false);
-    }
     return true;
 }
 
