@@ -34,6 +34,7 @@
 #include <QQueue>
 #include <QVector>
 #include <QWidget>
+#include <memory>
 #include "libmscore/mscore.h"
 #include "libmscore/score.h"
 
@@ -84,12 +85,6 @@ public:
   double scale() const { return m_scale; }
   void setScale(double newScale);
   
-  // Currently loaded score.
-  Ms::Score * loadedScore() const { return m_score; }
-  
-  // Currently displayed score.
-  Ms::Score * workingScore() const { return m_workingScore; }
-  
   // Score title.
   QString title() const;
   
@@ -123,8 +118,8 @@ private:
   void alignLastPageSystems();
   
   Ms::MScore &m_app;
-  Ms::Score *m_score;
-  Ms::Score *m_workingScore;
+  std::unique_ptr<Ms::Score> m_score;
+  std::unique_ptr<Ms::Score> m_workingScore;
   int m_pageIdx;
   double m_scale;
   QSizeF m_pageSize;

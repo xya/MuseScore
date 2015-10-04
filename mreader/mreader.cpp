@@ -201,19 +201,15 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 ////////////////////////////////////////////////////////////////////////////////
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
-    m_app(App), m_score(nullptr), m_workingScore(nullptr), m_twoSided(false),
-    m_showInstrumentNames(true)
+    m_app(App), m_twoSided(true), m_showInstrumentNames(true)
 {
     m_pageIdx = 0;
     m_scale = 1.0;
     m_pageSize = QSizeF(1920.0, 1080.0);
-    m_twoSided = true;
 }
 
 ScorePager::~ScorePager()
 {
-    delete m_workingScore;
-    delete m_score;
 }
 
 QString ScorePager::title() const
@@ -227,18 +223,17 @@ QString ScorePager::title() const
 
 bool ScorePager::loadScore(QString path)
 {
+    std::unique_ptr<Ms::Score> score(new Ms::Score(m_app.baseStyle()));
     QFileInfo fi(path);
-    m_score = new Ms::Score(m_app.baseStyle());
-    m_score->setName(fi.completeBaseName());
+    score->setName(fi.completeBaseName());
 
-    Ms::Score::FileError rv = m_score->loadMsc(path, false);
+    Ms::Score::FileError rv = score->loadMsc(path, false);
     if (rv != Ms::Score::FileError::FILE_NO_ERROR)
     {
-        delete m_score;
-        m_score = nullptr;
         return false;
     }
-    m_workingScore = m_score->clone();
+    m_score.swap(score);
+    m_workingScore.reset(m_score->clone());
     updateStyle();
     return true;
 }
