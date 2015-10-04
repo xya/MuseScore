@@ -79,7 +79,10 @@ public:
   // Whether to disaply one or two pages at the same time.
   bool isTwoSided() const { return m_twoSided; }
   
-  // Whether to show instrument names or not
+  // Whether to show lyrics or not
+  bool showLyrics() const { return m_showLyrics; }
+  
+  // Whether to show instrument names or not.
   bool showInstrumentNames() const { return m_showInstrumentNames; }
   
   // Page size.
@@ -113,6 +116,7 @@ public slots:
   void zoomIn();
   void zoomOut();
   void setTwoSided(bool newVal);
+  void setShowLyrics(bool newVal);
   void setShowInstrumentNames(bool newVal);
   void setPageIndex(int newIndex);
   void setPartIndex(int newIndex);
@@ -123,6 +127,7 @@ signals:
   
 private:
   void loadPart(int partIdx);
+  void removeLyrics(Ms::Score *score);
   void updateStyle();
   
   // Recalculate the layout of the whole score.
@@ -143,6 +148,7 @@ private:
   bool m_alignSystems;
   bool m_showInstrumentNames;
   bool m_soloInstrument;
+  bool m_showLyrics;
 };
 
 class ScoreWidget : public QWidget
@@ -183,6 +189,7 @@ private:
   QAction *m_zoomIn;
   QAction *m_zoomOut;
   QAction *m_twoSided;
+  QAction *m_showLyrics;
   QAction *m_showInstrumentNames;
   QAction *m_fullscreen;
   Qt::WindowStates m_lastScreenState;

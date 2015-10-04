@@ -23,10 +23,14 @@
 #include <QTextStream>
 #include <cmath>
 #include "mreader.h"
+#include "libmscore/chordrest.h"
 #include "libmscore/element.h"
 #include "libmscore/excerpt.h"
+#include "libmscore/lyrics.h"
+#include "libmscore/measure.h"
 #include "libmscore/page.h"
 #include "libmscore/part.h"
+#include "libmscore/staff.h"
 #include "libmscore/system.h"
 
 namespace Ms {
@@ -87,6 +91,8 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     m_zoomOut = pagerAction("Zoom out", QKeySequence::ZoomOut, SLOT(zoomOut()));
     m_twoSided = pagerAction("Two-sided layout", QKeySequence(Qt::Key_T),
                              Pager.isTwoSided(), SLOT(setTwoSided(bool)));
+    m_showLyrics = pagerAction("Show lyrics", QKeySequence(Qt::Key_L),
+                               Pager.showLyrics(), SLOT(setShowLyrics(bool)));
     m_showInstrumentNames = pagerAction("Show instrument names",
                                         QKeySequence(Qt::Key_I),
                                         Pager.showInstrumentNames(),
@@ -237,7 +243,7 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
     m_app(App), m_twoSided(true), m_alignSystems(true),
-    m_showInstrumentNames(true), m_soloInstrument(false)
+    m_showInstrumentNames(true), m_soloInstrument(false), m_showLyrics(true)
 {
     m_partIdx = -1;
     m_pageIdx = 0;
@@ -293,6 +299,15 @@ void ScorePager::setTwoSided(bool newVal)
     {
         m_twoSided = newVal;
         updateLayout();
+    }
+}
+
+void ScorePager::setShowLyrics(bool newVal)
+{
+    if (newVal != m_showLyrics)
+    {
+        m_showLyrics = newVal;
+        loadPart(m_partIdx);
     }
 }
 
@@ -384,8 +399,36 @@ void ScorePager::loadPart(int partIdx)
             part->setShow(i == m_partIdx);
         }
     }
+
+    // Hide lyrics.
+    if (!m_showLyrics)
+    {
+        removeLyrics(m_workingScore.get());
+    }
     emit partChanged();
     updateStyle();
+}
+
+void ScorePager::removeLyrics(Ms::Score *score)
+{
+    for (Ms::Measure *m = score->firstMeasure(); m; m = m->nextMeasure())
+    {
+        for (Ms::Segment *seg = m->first(); seg; seg = seg->next())
+        {
+            for (Ms::Element *el : seg->elist())
+            {
+                if (!el || !el->isChordRest())
+                    continue;
+                Ms::ChordRest *cr = static_cast<Ms::ChordRest *>(el);
+                for (Ms::Lyrics *lyrics : cr->lyricsList())
+                {
+                    if (!lyrics)
+                        continue;
+                    cr->remove(lyrics);
+                }
+            }
+        }
+    }
 }
 
 void ScorePager::updateStyle()
