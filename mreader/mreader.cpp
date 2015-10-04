@@ -69,29 +69,17 @@ int main(int argc, char **argv)
 
 ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
 {
-    m_previousPage = new QAction("Previous page", this);
-    m_nextPage = new QAction("Next page", this);
-    m_firstPage = new QAction("First page", this);
-    m_lastPage = new QAction("Last page", this);
-    m_zoomIn = new QAction("Zoom in", this);
-    m_zoomOut = new QAction("Zoom out", this);
-    m_twoSided = new QAction("Two-sided layout", this);
-    m_previousPage->setShortcut(QKeySequence::MoveToPreviousPage);
-    m_nextPage->setShortcut(QKeySequence::MoveToNextPage);
-    m_firstPage->setShortcut(QKeySequence::MoveToStartOfDocument);
-    m_lastPage->setShortcut(QKeySequence::MoveToEndOfDocument);
-    m_zoomIn->setShortcut(QKeySequence::ZoomIn);
-    m_zoomOut->setShortcut(QKeySequence::ZoomOut);
-    m_twoSided->setShortcut(QKeySequence(Qt::Key_T));
-    m_twoSided->setCheckable(true);
-    m_twoSided->setChecked(Pager.isTwoSided());
-    addAction(m_previousPage);
-    addAction(m_nextPage);
-    addAction(m_firstPage);
-    addAction(m_lastPage);
-    addAction(m_zoomIn);
-    addAction(m_zoomOut);
-    addAction(m_twoSided);
+    m_previousPage = createAction("Previous page", QKeySequence::MoveToPreviousPage);
+    m_nextPage = createAction("Next page", QKeySequence::MoveToNextPage);
+    m_firstPage = createAction("First page", QKeySequence::MoveToStartOfDocument);
+    m_lastPage = createAction("Last page", QKeySequence::MoveToEndOfDocument);
+    m_zoomIn = createAction("Zoom in", QKeySequence::ZoomIn);
+    m_zoomOut = createAction("Zoom out", QKeySequence::ZoomOut);
+    m_twoSided = createCheckable("Two-sided layout", QKeySequence(Qt::Key_T),
+                                 Pager.isTwoSided());
+    m_showInstrumentNames = createCheckable("Show instrument names",
+                                            QKeySequence(Qt::Key_I),
+                                            Pager.showInstrumentNames());
     QObject::connect(m_previousPage, SIGNAL(triggered(bool)),
                      &Pager, SLOT(previousPage()));
     QObject::connect(m_nextPage, SIGNAL(triggered(bool)),
@@ -106,11 +94,32 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
                      &Pager, SLOT(zoomOut()));
     QObject::connect(m_twoSided, SIGNAL(triggered(bool)),
                      &Pager, SLOT(setTwoSided(bool)));
+    QObject::connect(m_showInstrumentNames, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(setShowInstrumentNames(bool)));
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
 }
 
 ScoreWidget::~ScoreWidget()
 {
+}
+
+QAction * ScoreWidget::createAction(QString text, QKeySequence key)
+{
+    QAction *a = new QAction(text, this);
+    a->setShortcut(key);
+    addAction(a);
+    return a;
+}
+
+QAction * ScoreWidget::createCheckable(QString text, QKeySequence key,
+                                       bool initialVal)
+{
+    QAction *a = new QAction(text, this);
+    a->setShortcut(key);
+    a->setCheckable(true);
+    a->setChecked(initialVal);
+    addAction(a);
+    return a;
 }
 
 void ScoreWidget::wheelEvent(QWheelEvent *e)
@@ -160,7 +169,8 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 ////////////////////////////////////////////////////////////////////////////////
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
-    m_app(App), m_score(nullptr), m_workingScore(nullptr), m_twoSided(false)
+    m_app(App), m_score(nullptr), m_workingScore(nullptr), m_twoSided(false),
+    m_showInstrumentNames(true)
 {
     m_pageIdx = 0;
     m_scale = 1.0;
@@ -196,16 +206,8 @@ bool ScorePager::loadScore(QString path)
         m_score = nullptr;
         return false;
     }
-    Ms::MStyle *style = m_score->style();
-    m_score->setLayoutMode(Ms::LayoutMode::PAGE);
-    style->set(Ms::StyleIdx::showFooter, false);
-    style->set(Ms::StyleIdx::showHeader, false);
-    style->set(Ms::StyleIdx::showPageNumber, false);
-    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument, true);
     m_workingScore = m_score->clone();
-    m_workingScore->setShowVBox(false);
-    m_workingScore->setShowUnprintable(false);
-    m_workingScore->setShowInvisible(false);
+    updateStyle();
     return true;
 }
 
@@ -228,6 +230,15 @@ void ScorePager::setTwoSided(bool newVal)
     {
         m_twoSided = newVal;
         updateLayout();
+    }
+}
+
+void ScorePager::setShowInstrumentNames(bool newVal)
+{
+    if (newVal != m_showInstrumentNames)
+    {
+        m_showInstrumentNames = newVal;
+        updateStyle();
     }
 }
 
@@ -257,6 +268,23 @@ void ScorePager::setScale(double newScale)
         m_scale = newScale;
         updateLayout();
     }
+}
+
+void ScorePager::updateStyle()
+{
+    if (!m_workingScore)
+        return;
+    Ms::MStyle *style = m_workingScore->style();
+    m_workingScore->setLayoutMode(Ms::LayoutMode::PAGE);
+    style->set(Ms::StyleIdx::showFooter, false);
+    style->set(Ms::StyleIdx::showHeader, false);
+    style->set(Ms::StyleIdx::showPageNumber, false);
+    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument, true);
+    m_workingScore->setShowVBox(false);
+    m_workingScore->setShowUnprintable(false);
+    m_workingScore->setShowInvisible(false);
+    m_workingScore->setShowInstrumentNames(m_showInstrumentNames);
+    updateLayout();
 }
 
 void ScorePager::updateLayout()

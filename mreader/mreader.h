@@ -73,6 +73,9 @@ public:
   // Whether to disaply one or two pages at the same time.
   bool isTwoSided() const { return m_twoSided; }
   
+  // Whether to show instrument names or not
+  bool showInstrumentNames() const { return m_showInstrumentNames; }
+  
   // Page size.
   QSizeF pageSize() const { return m_pageSize; }
   void setPageSize(QSizeF newSize);
@@ -105,11 +108,14 @@ public slots:
   void zoomIn();
   void zoomOut();
   void setTwoSided(bool newVal);
+  void setShowInstrumentNames(bool newVal);
   
 signals:
   void updated();
   
 private:
+  void updateStyle();
+  
   // Recalculate the layout of the whole score.
   void updateLayout();
   
@@ -123,6 +129,7 @@ private:
   double m_scale;
   QSizeF m_pageSize;
   bool m_twoSided;
+  bool m_showInstrumentNames;
 };
 
 class ScoreWidget : public QWidget
@@ -139,6 +146,9 @@ protected:
   virtual void wheelEvent(QWheelEvent*);
   
 private:
+  QAction *createAction(QString text, QKeySequence key);
+  QAction *createCheckable(QString text, QKeySequence key, bool initialVal);
+  
   ScorePager &m_pager;
   QAction *m_previousPage;
   QAction *m_nextPage;
@@ -147,6 +157,7 @@ private:
   QAction *m_zoomIn;
   QAction *m_zoomOut;
   QAction *m_twoSided;
+  QAction *m_showInstrumentNames;
 };
 
 #endif
