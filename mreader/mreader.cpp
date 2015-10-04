@@ -30,9 +30,9 @@ int main(int argc, char **argv)
     }
     
     QString title = "MuseReader";
-    if (!Pager.score()->title().isEmpty()) {
+    if (!Pager.title().isEmpty()) {
         title += " - ";
-        title += Pager.score()->title();
+        title += Pager.title();
     }
     
     ScoreWidget View(Pager);
@@ -79,14 +79,9 @@ void ScoreWidget::resizeEvent(QResizeEvent *e)
 
 void ScoreWidget::paintEvent(QPaintEvent *e)
 {
-    if (!m_pager.score())
-        return;
-    
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, true);
-    p.setRenderHint(QPainter::TextAntialiasing, true);
-    
-    p.save();
+    p.setRenderHint(QPainter::TextAntialiasing, true);    
     p.fillRect(e->rect(), QColor("white"));
 
     QList<Ms::Element*> items = m_pager.pageItems();
@@ -100,15 +95,13 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
         e->draw(&p);
         p.translate(-pos);
     }
-    p.restore();
-    
     p.setClipping(false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
-    m_app(App), m_score(nullptr)
+    m_app(App), m_score(nullptr), m_workingScore(nullptr)
 {
     m_pageIdx = 0;
     m_scale = 1.0;
@@ -117,7 +110,17 @@ ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
 
 ScorePager::~ScorePager()
 {
+    delete m_workingScore;
     delete m_score;
+}
+
+QString ScorePager::title() const
+{
+    if (m_score)
+    {
+        return m_score->title();
+    }
+    return QString();
 }
 
 bool ScorePager::loadScore(QString path)
@@ -138,12 +141,18 @@ bool ScorePager::loadScore(QString path)
     style->set(Ms::StyleIdx::showFooter, false);
     style->set(Ms::StyleIdx::showHeader, false);
     style->set(Ms::StyleIdx::showPageNumber, false);
+    m_workingScore = m_score->clone();
+    m_workingScore->setShowVBox(false);
+    m_workingScore->setShowUnprintable(false);
+    m_workingScore->setShowInvisible(false);
+    m_workingScore->setShowInstrumentNames(false);
     return true;
 }
 
 void ScorePager::setPageIndex(int newIndex)
 {
-    if (!m_score || (newIndex < 0) || (newIndex >= m_score->pages().size()))
+    if (!m_workingScore ||
+            (newIndex < 0) || (newIndex >= m_workingScore->pages().size()))
         return;
     if (newIndex != m_pageIdx)
     {
@@ -174,34 +183,35 @@ void ScorePager::updateLayout()
     double widthInch = m_pageSize.width() / Ms::MScore::DPI;
     double heightInch = m_pageSize.height() / Ms::MScore::DPI;
     double f  = 1.0 / Ms::INCH;
-    double marginMm = 10.0;
+    double marginVertMm = 10.0;
+    double marginHorMm = 10.0;
     double staffSpaceMm = m_scale * 2.0;
 
     Ms::PageFormat pf;
-    pf.setEvenTopMargin(marginMm * f);
-    pf.setEvenBottomMargin(marginMm * f);
-    pf.setEvenLeftMargin(marginMm * f);
-    pf.setOddTopMargin(marginMm * f);
-    pf.setOddBottomMargin(marginMm * f);
-    pf.setOddLeftMargin(marginMm * f);
+    pf.setEvenTopMargin(marginVertMm * f);
+    pf.setEvenBottomMargin(marginVertMm * f);
+    pf.setEvenLeftMargin(marginHorMm * f);
+    pf.setOddTopMargin(marginVertMm * f);
+    pf.setOddBottomMargin(marginVertMm * f);
+    pf.setOddLeftMargin(marginHorMm * f);
     pf.setSize(QSizeF(widthInch, heightInch));
-    pf.setPrintableWidth(widthInch - (marginMm * 2.0 * f));
+    pf.setPrintableWidth(widthInch - (marginHorMm * 2.0 * f));
     pf.setTwosided(false);
 
-    m_score->setPageFormat(pf);
-    m_score->style()->setSpatium(staffSpaceMm * f * Ms::MScore::DPI);
-    m_score->setPrinting(true);
-    m_score->setLayoutAll(true);
-    m_score->update();
+    m_workingScore->setPageFormat(pf);
+    m_workingScore->style()->setSpatium(staffSpaceMm * f * Ms::MScore::DPI);
+    m_workingScore->setPrinting(true);
+    m_workingScore->setLayoutAll(true);
+    m_workingScore->update();
     emit updated();
 }
 
 QList<Ms::Element *> ScorePager::pageItems()
 {
     QList<Ms::Element*> items;
-    if (m_score->pages().size() > m_pageIdx)
+    if (m_workingScore && (m_workingScore->pages().size() > m_pageIdx))
     {
-        Ms::Page *page = m_score->pages().at(m_pageIdx);
+        Ms::Page *page = m_workingScore->pages().at(m_pageIdx);
         QRectF bounds = page->bbox();
         items = page->items(bounds);
         qStableSort(items.begin(), items.end(), Ms::elementLessThan);
@@ -226,8 +236,8 @@ void ScorePager::firstPage()
 
 void ScorePager::lastPage()
 {
-    if (m_score)
+    if (m_workingScore)
     {
-        setPageIndex(m_score->pages().size() - 1);
+        setPageIndex(m_workingScore->pages().size() - 1);
     }
 }

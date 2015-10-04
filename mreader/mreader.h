@@ -38,7 +38,13 @@ public:
   void setScale(double newScale);
   
   // Currently loaded score.
-  Ms::Score * score() const { return m_score; }
+  Ms::Score * loadedScore() const { return m_score; }
+  
+  // Currently displayed score.
+  Ms::Score * workingScore() const { return m_workingScore; }
+  
+  // Score title.
+  QString title() const;
   
   // Load a score file.
   bool loadScore(QString path);
@@ -60,6 +66,7 @@ private:
   
   Ms::MScore &m_app;
   Ms::Score *m_score;
+  Ms::Score *m_workingScore;
   int m_pageIdx;
   double m_scale;
   QSizeF m_pageSize;
