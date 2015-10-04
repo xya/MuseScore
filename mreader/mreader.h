@@ -35,10 +35,13 @@
 #include <QVector>
 #include <QWidget>
 #include <memory>
+#include <initializer_list>
 #include "libmscore/mscore.h"
 #include "libmscore/score.h"
 
 class QAction;
+
+using KeyIList = std::initializer_list<QKeySequence::StandardKey>;
 
 // Element, page pair.
 struct PageElement
@@ -164,13 +167,15 @@ private slots:
 private:
   QAction *pagerAction(QString text, QKeySequence key,
                        const char *slotName = nullptr);
+  QAction *pagerAction(QString text, KeyIList &keys,
+                       const char *slotName = nullptr);
   QAction *pagerAction(QString text, QKeySequence key, bool initialVal,
                        const char *slotName = nullptr);
   
   ScorePager &m_pager;
   QAction *m_previousPart;
   QAction *m_nextPart;
-  QAction *m_previousPage;
+  QAction *m_prevPage;
   QAction *m_nextPage;
   QAction *m_firstPage;
   QAction *m_lastPage;

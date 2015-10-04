@@ -68,16 +68,17 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     m_lastScreenState = windowState();
     
     // Set up pager actions.
+    auto prevPageKeys = {QKeySequence::MoveToPreviousPage,
+                         QKeySequence::MoveToPreviousChar};
+    auto nextPageKeys = {QKeySequence::MoveToNextPage,
+                         QKeySequence::MoveToNextChar};
     m_previousPart = pagerAction("Previous part",
                                  QKeySequence::MoveToPreviousWord,
                                  SLOT(previousPart()));
     m_nextPart = pagerAction("Next part", QKeySequence::MoveToNextWord,
                              SLOT(nextPart()));
-    m_previousPage = pagerAction("Previous page",
-                                 QKeySequence::MoveToPreviousPage,
-                                 SLOT(previousPage()));
-    m_nextPage = pagerAction("Next page", QKeySequence::MoveToNextPage,
-                             SLOT(nextPage()));
+    m_prevPage = pagerAction("Previous page", prevPageKeys, SLOT(previousPage()));
+    m_nextPage = pagerAction("Next page", nextPageKeys, SLOT(nextPage()));
     m_firstPage = pagerAction("First page", QKeySequence::MoveToStartOfDocument,
                               SLOT(firstPage()));
     m_lastPage = pagerAction("Last page", QKeySequence::MoveToEndOfDocument,
@@ -121,6 +122,17 @@ QAction * ScoreWidget::pagerAction(QString text, QKeySequence key,
     {
         QObject::connect(a, SIGNAL(triggered(bool)), &m_pager, slotName);
     }
+    return a;
+}
+
+QAction * ScoreWidget::pagerAction(QString text, KeyIList &keys,
+                                   const char *slotName)
+{
+    QAction *a = pagerAction(text, QKeySequence(), slotName);
+    QList<QKeySequence> keyList;
+    for (auto key : keys)
+        keyList.append(QKeySequence(key));
+    a->setShortcuts(keyList);
     return a;
 }
 
