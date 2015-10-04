@@ -91,6 +91,8 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     m_zoomOut = pagerAction("Zoom out", QKeySequence::ZoomOut, SLOT(zoomOut()));
     m_twoSided = pagerAction("Two-sided layout", QKeySequence(Qt::Key_T),
                              Pager.isTwoSided(), SLOT(setTwoSided(bool)));
+    m_concertPitch = pagerAction("Concert pitch", QKeySequence(Qt::Key_C),
+                                 Pager.concertPitch(), SLOT(setConcertPitch(bool)));
     m_showLyrics = pagerAction("Show lyrics", QKeySequence(Qt::Key_L),
                                Pager.showLyrics(), SLOT(setShowLyrics(bool)));
     m_showInstrumentNames = pagerAction("Show instrument names",
@@ -276,6 +278,7 @@ bool ScorePager::loadScore(QString path)
         return false;
     }
     m_score.swap(score);
+    m_concertPitch = m_score->styleB(Ms::StyleIdx::concertPitch);
     loadPart(m_partIdx);
     return true;
 }
@@ -299,6 +302,15 @@ void ScorePager::setTwoSided(bool newVal)
     {
         m_twoSided = newVal;
         updateLayout();
+    }
+}
+
+void ScorePager::setConcertPitch(bool newVal)
+{
+    if (newVal != m_concertPitch)
+    {
+        m_concertPitch = newVal;
+        updateStyle();
     }
 }
 
@@ -441,6 +453,7 @@ void ScorePager::updateStyle()
     style->set(Ms::StyleIdx::showHeader, false);
     style->set(Ms::StyleIdx::showPageNumber, false);
     style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument, true);
+    style->set(Ms::StyleIdx::concertPitch, m_concertPitch);
     m_workingScore->setShowVBox(false);
     m_workingScore->setShowUnprintable(false);
     m_workingScore->setShowInvisible(false);

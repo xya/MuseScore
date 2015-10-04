@@ -79,7 +79,10 @@ public:
   // Whether to disaply one or two pages at the same time.
   bool isTwoSided() const { return m_twoSided; }
   
-  // Whether to show lyrics or not
+  // Whether to show scores in concert pitch or not.
+  bool concertPitch() const { return m_concertPitch; }
+  
+  // Whether to show lyrics or not.
   bool showLyrics() const { return m_showLyrics; }
   
   // Whether to show instrument names or not.
@@ -116,6 +119,7 @@ public slots:
   void zoomIn();
   void zoomOut();
   void setTwoSided(bool newVal);
+  void setConcertPitch(bool newVal);
   void setShowLyrics(bool newVal);
   void setShowInstrumentNames(bool newVal);
   void setPageIndex(int newIndex);
@@ -149,6 +153,7 @@ private:
   bool m_showInstrumentNames;
   bool m_soloInstrument;
   bool m_showLyrics;
+  bool m_concertPitch;
 };
 
 class ScoreWidget : public QWidget
@@ -189,6 +194,7 @@ private:
   QAction *m_zoomIn;
   QAction *m_zoomOut;
   QAction *m_twoSided;
+  QAction *m_concertPitch;
   QAction *m_showLyrics;
   QAction *m_showInstrumentNames;
   QAction *m_fullscreen;
