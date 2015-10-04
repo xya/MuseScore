@@ -1,3 +1,4 @@
+#include <QAction>
 #include <QPainter>
 #include <QScreen>
 #include <cmath>
@@ -49,23 +50,31 @@ int main(int argc, char **argv)
 
 ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
 {
+    m_previousPage = new QAction("Previous page", this);
+    m_nextPage = new QAction("Next page", this);
+    m_firstPage = new QAction("First page", this);
+    m_lastPage = new QAction("Last page", this);
+    m_previousPage->setShortcut(QKeySequence::MoveToPreviousPage);
+    m_nextPage->setShortcut(QKeySequence::MoveToNextPage);
+    m_firstPage->setShortcut(QKeySequence::MoveToStartOfDocument);
+    m_lastPage->setShortcut(QKeySequence::MoveToEndOfDocument);
+    addAction(m_previousPage);
+    addAction(m_nextPage);
+    addAction(m_firstPage);
+    addAction(m_lastPage);
+    QObject::connect(m_previousPage, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(previousPage()));
+    QObject::connect(m_nextPage, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(nextPage()));
+    QObject::connect(m_firstPage, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(firstPage()));
+    QObject::connect(m_lastPage, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(lastPage()));
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
 }
 
 ScoreWidget::~ScoreWidget()
 {
-}
-
-void ScoreWidget::keyReleaseEvent(QKeyEvent *e)
-{
-    if (e->matches(QKeySequence::MoveToNextPage))
-    {
-        m_pager.nextPage();
-    }
-    else if (e->matches(QKeySequence::MoveToPreviousPage))
-    {
-        m_pager.previousPage();
-    }
 }
 
 void ScoreWidget::wheelEvent(QWheelEvent *e)

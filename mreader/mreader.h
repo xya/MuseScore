@@ -18,6 +18,8 @@
 #include "libmscore/mscore.h"
 #include "libmscore/score.h"
 
+class QAction;
+
 // Element, page pair.
 struct PageElement
 {
@@ -113,11 +115,14 @@ public:
 protected:
   virtual void paintEvent(QPaintEvent*);
   virtual void resizeEvent(QResizeEvent*);
-  virtual void keyReleaseEvent(QKeyEvent*);
   virtual void wheelEvent(QWheelEvent*);
   
 private:
   ScorePager &m_pager;
+  QAction *m_previousPage;
+  QAction *m_nextPage;
+  QAction *m_firstPage;
+  QAction *m_lastPage;
 };
 
 #endif
