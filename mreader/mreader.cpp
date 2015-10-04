@@ -96,7 +96,14 @@ ScoreWidget::~ScoreWidget()
 
 void ScoreWidget::wheelEvent(QWheelEvent *e)
 {
-     m_pager.setScale(m_pager.scale() + e->delta() / 1200.0);
+    int pages = -qRound(e->delta() / 120.0);
+    for (int i = 0; i < qAbs(pages); i++)
+    {
+        if (pages > 0)
+            m_pager.nextPage();
+        else
+            m_pager.previousPage();
+    }
 }
 
 void ScoreWidget::resizeEvent(QResizeEvent *e)
