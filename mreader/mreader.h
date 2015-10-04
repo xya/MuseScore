@@ -13,13 +13,24 @@
 #include <QQmlEngine>
 #include <QQmlListProperty>
 #include <QQueue>
-#include <QList>
+#include <QVector>
 #include <QWidget>
 #include "libmscore/mscore.h"
 #include "libmscore/score.h"
 
+// Element, page pair.
+struct PageElement
+{
+    Ms::Element *E;
+    Ms::Page *P;
+    
+    PageElement() : E(nullptr), P(nullptr) {}
+    PageElement(Ms::Element *e, Ms::Page *p) : E(e), P(p) {}
+};
+
 // Presents single pages from a score.
-class ScorePager : public QObject {
+class ScorePager : public QObject
+{
 Q_OBJECT
 public:
   ScorePager(Ms::MScore &App, QObject *Parent = nullptr);
@@ -28,6 +39,19 @@ public:
   // Current page index.
   int pageIndex() const { return m_pageIdx; }
   void setPageIndex(int newIndex);
+  
+  // Number of logical pages.
+  int numPages() const;
+  
+  // Number of physical pages.
+  int numPhysPages() const;
+  
+  // Number of pages shown on screen at the same time.
+  int numPagesShown() const { return m_twoSided ? 2 : 1; }
+  
+  // Whether to disaply one or two pages at the same time.
+  bool isTwoSided() const { return m_twoSided; }
+  void setTwoSided(bool newVal);
   
   // Page size.
   QSizeF pageSize() const { return m_pageSize; }
@@ -50,7 +74,8 @@ public:
   bool loadScore(QString path);
   
   // Return the currently visible page items.
-  QList<Ms::Element*> pageItems();
+  void addPageItems(QVector<PageElement> &elements,
+                    QVector<QPointF> &pageOffets);
   
 public slots:
   void nextPage();
@@ -70,9 +95,11 @@ private:
   int m_pageIdx;
   double m_scale;
   QSizeF m_pageSize;
+  bool m_twoSided;
 };
 
-class ScoreWidget : public QWidget {
+class ScoreWidget : public QWidget
+{
 Q_OBJECT
   
 public:

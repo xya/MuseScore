@@ -84,13 +84,20 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
     p.setRenderHint(QPainter::TextAntialiasing, true);    
     p.fillRect(e->rect(), QColor("white"));
 
-    QList<Ms::Element*> items = m_pager.pageItems();
-    for (const Ms::Element* e : items)
+    QVector<PageElement> items;
+    QVector<QPointF> pageOffsets;
+    m_pager.addPageItems(items, pageOffsets);
+    for (const PageElement &pe : items)
     {
+        Ms::Element *e = pe.E;
         e->itemDiscovered = 0;
         if (!e->visible())
             continue;
-        QPointF pos(e->pagePos());
+        int offsetIndex = pe.P->no() - m_pager.pageIndex();
+        if ((offsetIndex < 0) || (offsetIndex >= pageOffsets.size()))
+            continue;
+        QPointF pageOffset(pageOffsets[offsetIndex]);
+        QPointF pos(pageOffset + e->pagePos());
         p.translate(pos);
         e->draw(&p);
         p.translate(-pos);
@@ -101,11 +108,12 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 ////////////////////////////////////////////////////////////////////////////////
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
-    m_app(App), m_score(nullptr), m_workingScore(nullptr)
+    m_app(App), m_score(nullptr), m_workingScore(nullptr), m_twoSided(false)
 {
     m_pageIdx = 0;
     m_scale = 1.0;
     m_pageSize = QSizeF(1920.0, 1080.0);
+    m_twoSided = true;
 }
 
 ScorePager::~ScorePager()
@@ -152,10 +160,31 @@ bool ScorePager::loadScore(QString path)
     return true;
 }
 
+int ScorePager::numPhysPages() const
+{
+    if (m_workingScore)
+        return m_workingScore->pages().size();
+    return 0;
+}
+
+int ScorePager::numPages() const
+{
+    int pages = numPhysPages();
+    return m_twoSided ? (pages + 1) / 2 : pages;
+}
+
+void ScorePager::setTwoSided(bool newVal)
+{
+    if (newVal != m_twoSided)
+    {
+        m_twoSided = newVal;
+        updateLayout();
+    }
+}
+
 void ScorePager::setPageIndex(int newIndex)
 {
-    if (!m_workingScore ||
-            (newIndex < 0) || (newIndex >= m_workingScore->pages().size()))
+    if ((newIndex < 0) || (newIndex >= numPhysPages()))
         return;
     if (newIndex != m_pageIdx)
     {
@@ -189,6 +218,8 @@ void ScorePager::updateLayout()
     double marginVertMm = 10.0;
     double marginHorMm = 10.0;
     double staffSpaceMm = m_scale * 2.0;
+    if (m_twoSided)
+        widthInch *= 0.5;
 
     Ms::PageFormat pf;
     pf.setEvenTopMargin(marginVertMm * f);
@@ -199,7 +230,7 @@ void ScorePager::updateLayout()
     pf.setOddLeftMargin(marginHorMm * f);
     pf.setSize(QSizeF(widthInch, heightInch));
     pf.setPrintableWidth(widthInch - (marginHorMm * 2.0 * f));
-    pf.setTwosided(false);
+    pf.setTwosided(m_twoSided);
 
     m_workingScore->setPageFormat(pf);
     m_workingScore->style()->setSpatium(staffSpaceMm * f * Ms::MScore::DPI);
@@ -209,27 +240,50 @@ void ScorePager::updateLayout()
     emit updated();
 }
 
-QList<Ms::Element *> ScorePager::pageItems()
+static bool pageElementLessThan(const PageElement &e1, const PageElement &e2)
 {
-    QList<Ms::Element*> items;
-    if (m_workingScore && (m_workingScore->pages().size() > m_pageIdx))
+    return Ms::elementLessThan(e1.E, e2.E) && (e1.P->no() < e2.P->no());
+}
+
+void ScorePager::addPageItems(QVector<PageElement> &elements,
+                              QVector<QPointF> &pageOffets)
+{
+    pageOffets.clear();
+    if (m_workingScore)
     {
-        Ms::Page *page = m_workingScore->pages().at(m_pageIdx);
-        QRectF bounds = page->bbox();
-        items = page->items(bounds);
-        qStableSort(items.begin(), items.end(), Ms::elementLessThan);
+        QPointF interPageOffset(-m_workingScore->pageFormat()->oddRightMargin(),
+                                0);
+        interPageOffset *= Ms::MScore::DPI;
+        QPointF pageOffset(0.0, 0.0);
+        Ms::Page *prevPage = nullptr;
+        for (int i = 0; i < numPagesShown(); i++)
+        {
+            Ms::Page *page = m_workingScore->pages().value(m_pageIdx + i);
+            if (!page)
+                break;
+            if (prevPage)
+                pageOffset += (page->pos() - prevPage->pos() + interPageOffset);
+            QRectF bounds = page->bbox();
+            QList<Ms::Element *> items = page->items(bounds);
+            for(Ms::Element *el : items)
+            {
+                elements.push_back(PageElement(el, page));
+            }
+            pageOffets.append(pageOffset);
+            prevPage = page;
+        }
+        qStableSort(elements.begin(), elements.end(), pageElementLessThan);
     }
-    return items;
 }
 
 void ScorePager::nextPage()
 {
-    setPageIndex(pageIndex() + 1);
+    setPageIndex(pageIndex() + numPagesShown());
 }
 
 void ScorePager::previousPage()
 {
-    setPageIndex(pageIndex() - 1);
+    setPageIndex(pageIndex() - numPagesShown());
 }
 
 void ScorePager::firstPage()
@@ -239,8 +293,9 @@ void ScorePager::firstPage()
 
 void ScorePager::lastPage()
 {
-    if (m_workingScore)
-    {
-        setPageIndex(m_workingScore->pages().size() - 1);
-    }
+    int pages = numPhysPages();
+    int lastPageIndex = pages - 1;
+    if (m_twoSided)
+        lastPageIndex = (lastPageIndex / numPagesShown()) * numPagesShown();
+    setPageIndex(lastPageIndex);
 }
