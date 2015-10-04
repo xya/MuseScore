@@ -23,6 +23,7 @@
 #include <cmath>
 #include "mreader.h"
 #include "libmscore/element.h"
+#include "libmscore/excerpt.h"
 #include "libmscore/page.h"
 #include "libmscore/system.h"
 
@@ -50,14 +51,7 @@ int main(int argc, char **argv)
         return 1;
     }
     
-    QString title = "MuseReader";
-    if (!Pager.title().isEmpty()) {
-        title += " - ";
-        title += Pager.title();
-    }
-    
     ScoreWidget View(Pager);
-    View.setWindowTitle(title);
     View.setWindowState(Qt::WindowMaximized);
     View.show();
     
@@ -72,6 +66,11 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     m_lastScreenState = windowState();
     
     // Set up pager actions.
+    m_previousPart = pagerAction("Previous part",
+                                 QKeySequence::MoveToPreviousWord,
+                                 SLOT(previousPart()));
+    m_nextPart = pagerAction("Next part", QKeySequence::MoveToNextWord,
+                             SLOT(nextPart()));
     m_previousPage = pagerAction("Previous page",
                                  QKeySequence::MoveToPreviousPage,
                                  SLOT(previousPage()));
@@ -101,6 +100,9 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     
     // Other connections.
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
+    QObject::connect(&Pager, SIGNAL(partChanged()), this, SLOT(updateTitle()));
+    
+    updateTitle();
 }
 
 ScoreWidget::~ScoreWidget()
@@ -147,6 +149,25 @@ void ScoreWidget::setFullscreen(bool newVal)
         setWindowState(m_lastScreenState);
     }
     m_fullscreen->setChecked(newVal);
+}
+
+void ScoreWidget::updateTitle()
+{
+    QString scoreTitle = m_pager.title();
+    QString partName = m_pager.partName();
+    QString title = "MuseReader";
+    if (!scoreTitle.isEmpty())
+    {
+        title += " - ";
+        title += scoreTitle;
+        if (!partName.isEmpty())
+        {
+            title += " [";
+            title += partName;
+            title += "]";
+        }
+    }
+    setWindowTitle(title);
 }
 
 void ScoreWidget::mouseDoubleClickEvent(QMouseEvent *)
@@ -203,6 +224,7 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
     m_app(App), m_twoSided(true), m_showInstrumentNames(true)
 {
+    m_partIdx = -1;
     m_pageIdx = 0;
     m_scale = 1.0;
     m_pageSize = QSizeF(1920.0, 1080.0);
@@ -221,6 +243,15 @@ QString ScorePager::title() const
     return QString();
 }
 
+QString ScorePager::partName() const
+{
+    if (m_workingScore && (m_partIdx >= 0))
+    {
+        return m_score->excerpts().value(m_partIdx)->title();
+    }
+    return QString();
+}
+
 bool ScorePager::loadScore(QString path)
 {
     std::unique_ptr<Ms::Score> score(new Ms::Score(m_app.baseStyle()));
@@ -233,8 +264,7 @@ bool ScorePager::loadScore(QString path)
         return false;
     }
     m_score.swap(score);
-    m_workingScore.reset(m_score->clone());
-    updateStyle();
+    loadPart(m_partIdx);
     return true;
 }
 
@@ -280,6 +310,14 @@ void ScorePager::setPageIndex(int newIndex)
     }
 }
 
+void ScorePager::setPartIndex(int newIndex)
+{
+    if (newIndex != m_partIdx)
+    {
+        loadPart(newIndex);
+    }
+}
+
 void ScorePager::setPageSize(QSizeF newSize)
 {
     m_pageSize = newSize;
@@ -297,6 +335,26 @@ void ScorePager::setScale(double newScale)
     }
 }
 
+void ScorePager::loadPart(int partIdx)
+{
+    Ms::Score *base = m_score.get();
+    if (!base)
+        return;
+    int numParts = base->excerpts().size();
+    if ((numParts > 0) && (partIdx >= 0))
+    {
+        m_partIdx = qMin(partIdx, numParts - 1);
+        base = base->excerpts().value(m_partIdx)->partScore();
+    }
+    else
+    {
+        m_partIdx = -1;
+    }
+    m_workingScore.reset(base->clone());
+    emit partChanged();
+    updateStyle();
+}
+
 void ScorePager::updateStyle()
 {
     if (!m_workingScore)
@@ -306,7 +364,8 @@ void ScorePager::updateStyle()
     style->set(Ms::StyleIdx::showFooter, false);
     style->set(Ms::StyleIdx::showHeader, false);
     style->set(Ms::StyleIdx::showPageNumber, false);
-    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument, true);
+    style->set(Ms::StyleIdx::hideInstrumentNameIfOneInstrument,
+               m_partIdx == -1);
     m_workingScore->setShowVBox(false);
     m_workingScore->setShowUnprintable(false);
     m_workingScore->setShowInvisible(false);
@@ -426,6 +485,16 @@ void ScorePager::addPageItems(QVector<PageElement> &elements,
         }
         qStableSort(elements.begin(), elements.end(), pageElementLessThan);
     }
+}
+
+void ScorePager::nextPart()
+{
+    setPartIndex(partIndex() + 1);
+}
+
+void ScorePager::previousPart()
+{
+    setPartIndex(partIndex() - 1);
 }
 
 void ScorePager::nextPage()

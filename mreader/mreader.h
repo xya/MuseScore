@@ -58,9 +58,11 @@ public:
   ScorePager(Ms::MScore &App, QObject *Parent = nullptr);
   virtual ~ScorePager();
   
+  // Current part index.
+  int partIndex() const { return m_partIdx; }
+  
   // Current page index.
   int pageIndex() const { return m_pageIdx; }
-  void setPageIndex(int newIndex);
   
   // Number of logical pages.
   int numPages() const;
@@ -88,6 +90,9 @@ public:
   // Score title.
   QString title() const;
   
+  // Part name.
+  QString partName() const;
+  
   // Load a score file.
   bool loadScore(QString path);
   
@@ -96,6 +101,8 @@ public:
                     QVector<QPointF> &pageOffets);
   
 public slots:
+  void nextPart();
+  void previousPart();
   void nextPage();
   void previousPage();
   void firstPage();
@@ -104,11 +111,15 @@ public slots:
   void zoomOut();
   void setTwoSided(bool newVal);
   void setShowInstrumentNames(bool newVal);
+  void setPageIndex(int newIndex);
+  void setPartIndex(int newIndex);
   
 signals:
   void updated();
+  void partChanged();
   
 private:
+  void loadPart(int partIdx);
   void updateStyle();
   
   // Recalculate the layout of the whole score.
@@ -120,6 +131,7 @@ private:
   Ms::MScore &m_app;
   std::unique_ptr<Ms::Score> m_score;
   std::unique_ptr<Ms::Score> m_workingScore;
+  int m_partIdx;
   int m_pageIdx;
   double m_scale;
   QSizeF m_pageSize;
@@ -145,6 +157,7 @@ protected:
   
 private slots:
   void setFullscreen(bool newVal);
+  void updateTitle();
   
 private:
   QAction *pagerAction(QString text, QKeySequence key,
@@ -153,6 +166,8 @@ private:
                        const char *slotName = nullptr);
   
   ScorePager &m_pager;
+  QAction *m_previousPart;
+  QAction *m_nextPart;
   QAction *m_previousPage;
   QAction *m_nextPage;
   QAction *m_firstPage;
