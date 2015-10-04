@@ -146,8 +146,10 @@ protected:
   virtual void wheelEvent(QWheelEvent*);
   
 private:
-  QAction *createAction(QString text, QKeySequence key);
-  QAction *createCheckable(QString text, QKeySequence key, bool initialVal);
+  QAction *pagerAction(QString text, QKeySequence key,
+                       const char *slotName = nullptr);
+  QAction *pagerAction(QString text, QKeySequence key, bool initialVal,
+                       const char *slotName = nullptr);
   
   ScorePager &m_pager;
   QAction *m_previousPage;

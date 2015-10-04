@@ -69,33 +69,23 @@ int main(int argc, char **argv)
 
 ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
 {
-    m_previousPage = createAction("Previous page", QKeySequence::MoveToPreviousPage);
-    m_nextPage = createAction("Next page", QKeySequence::MoveToNextPage);
-    m_firstPage = createAction("First page", QKeySequence::MoveToStartOfDocument);
-    m_lastPage = createAction("Last page", QKeySequence::MoveToEndOfDocument);
-    m_zoomIn = createAction("Zoom in", QKeySequence::ZoomIn);
-    m_zoomOut = createAction("Zoom out", QKeySequence::ZoomOut);
-    m_twoSided = createCheckable("Two-sided layout", QKeySequence(Qt::Key_T),
-                                 Pager.isTwoSided());
-    m_showInstrumentNames = createCheckable("Show instrument names",
-                                            QKeySequence(Qt::Key_I),
-                                            Pager.showInstrumentNames());
-    QObject::connect(m_previousPage, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(previousPage()));
-    QObject::connect(m_nextPage, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(nextPage()));
-    QObject::connect(m_firstPage, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(firstPage()));
-    QObject::connect(m_lastPage, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(lastPage()));
-    QObject::connect(m_zoomIn, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(zoomIn()));
-    QObject::connect(m_zoomOut, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(zoomOut()));
-    QObject::connect(m_twoSided, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(setTwoSided(bool)));
-    QObject::connect(m_showInstrumentNames, SIGNAL(triggered(bool)),
-                     &Pager, SLOT(setShowInstrumentNames(bool)));
+    m_previousPage = pagerAction("Previous page",
+                                 QKeySequence::MoveToPreviousPage,
+                                 SLOT(previousPage()));
+    m_nextPage = pagerAction("Next page", QKeySequence::MoveToNextPage,
+                             SLOT(nextPage()));
+    m_firstPage = pagerAction("First page", QKeySequence::MoveToStartOfDocument,
+                              SLOT(firstPage()));
+    m_lastPage = pagerAction("Last page", QKeySequence::MoveToEndOfDocument,
+                             SLOT(lastPage()));
+    m_zoomIn = pagerAction("Zoom in", QKeySequence::ZoomIn, SLOT(zoomIn()));
+    m_zoomOut = pagerAction("Zoom out", QKeySequence::ZoomOut, SLOT(zoomOut()));
+    m_twoSided = pagerAction("Two-sided layout", QKeySequence(Qt::Key_T),
+                             Pager.isTwoSided(), SLOT(setTwoSided(bool)));
+    m_showInstrumentNames = pagerAction("Show instrument names",
+                                        QKeySequence(Qt::Key_I),
+                                        Pager.showInstrumentNames(),
+                                        SLOT(setShowInstrumentNames(bool)));
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
 }
 
@@ -103,22 +93,31 @@ ScoreWidget::~ScoreWidget()
 {
 }
 
-QAction * ScoreWidget::createAction(QString text, QKeySequence key)
+QAction * ScoreWidget::pagerAction(QString text, QKeySequence key,
+                                   const char *slotName)
 {
     QAction *a = new QAction(text, this);
     a->setShortcut(key);
     addAction(a);
+    if (slotName)
+    {
+        QObject::connect(a, SIGNAL(triggered(bool)), &m_pager, slotName);
+    }
     return a;
 }
 
-QAction * ScoreWidget::createCheckable(QString text, QKeySequence key,
-                                       bool initialVal)
+QAction * ScoreWidget::pagerAction(QString text, QKeySequence key,
+                                   bool checked, const char *slotName)
 {
     QAction *a = new QAction(text, this);
     a->setShortcut(key);
     a->setCheckable(true);
-    a->setChecked(initialVal);
+    a->setChecked(checked);
     addAction(a);
+    if (slotName)
+    {
+        QObject::connect(a, SIGNAL(triggered(bool)), &m_pager, slotName);
+    }
     return a;
 }
 
