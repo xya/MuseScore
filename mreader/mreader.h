@@ -140,6 +140,7 @@ private:
   double m_scale;
   QSizeF m_pageSize;
   bool m_twoSided;
+  bool m_alignSystems;
   bool m_showInstrumentNames;
   bool m_soloInstrument;
 };

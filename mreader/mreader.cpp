@@ -236,8 +236,8 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 ////////////////////////////////////////////////////////////////////////////////
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
-    m_app(App), m_twoSided(true), m_showInstrumentNames(true),
-    m_soloInstrument(false)
+    m_app(App), m_twoSided(true), m_alignSystems(true),
+    m_showInstrumentNames(true), m_soloInstrument(false)
 {
     m_partIdx = -1;
     m_pageIdx = 0;
@@ -436,7 +436,10 @@ void ScorePager::updateLayout()
     m_workingScore->setPrinting(true);
     m_workingScore->setLayoutAll(true);
     m_workingScore->update();
-    alignLastPageSystems();
+    if (m_alignSystems)
+    {
+        alignLastPageSystems();
+    }
     
     // Adjust the page index when the number of pages decreases.
     if (m_pageIdx >= m_workingScore->pages().size())
@@ -453,36 +456,19 @@ void ScorePager::alignLastPageSystems()
     if (numPhysPages() < 2)
         return;
     
-    // Determine the previous page's system distances.
+    // Collect the previous page's systems.
     Ms::Page *prevPage = m_workingScore->pages().value(numPhysPages() - 2);
-    QVector<qreal> prevDistances;
-    for (Ms::System *sys : *prevPage->systems())
-    {
-        prevDistances.append(sys->addStretch() ? sys->stretchDistance() : 0.0);
-    }
+    QList<Ms::System *> &prevSystems = *prevPage->systems();
     
     // Align all systems in the page.
     int i = 0;
-    qreal yOffset = 0;
     Ms::Page *page = m_workingScore->pages().value(numPhysPages() - 1);
     for (Ms::System *sys : *page->systems())
     {
-        // Apply any vertical offset.
-        sys->move(QPointF(0.0, yOffset));
-        
-        // Reduce the system's stretch distance if it is larger than the
-        // corresponding system on the previous page.
-        if (i >= prevDistances.size())
+        Ms::System *prevSys = prevSystems.value(i);
+        if (!prevSys)
             break;
-        qreal prevDist = prevDistances[i];
-        qreal dist = sys->addStretch() ? sys->stretchDistance() : 0.0;
-        if (dist > prevDist)
-        {
-            // Stretch is added after a system, it affects following systems.
-            sys->setStretchDistance(prevDist);
-            yOffset += (prevDist - dist);
-        }
-        
+        sys->rypos() = prevSys->rypos();
         i++;
     }
 }
