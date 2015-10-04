@@ -113,10 +113,9 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
         e->itemDiscovered = 0;
         if (!e->visible())
             continue;
-        int offsetIndex = pe.P->no() - m_pager.pageIndex();
-        if ((offsetIndex < 0) || (offsetIndex >= pageOffsets.size()))
+        if ((pe.PageIdx < 0) || (pe.PageIdx >= pageOffsets.size()))
             continue;
-        QPointF pageOffset(pageOffsets[offsetIndex]);
+        QPointF pageOffset(pageOffsets[pe.PageIdx]);
         QPointF pos(pageOffset + e->pagePos());
         p.translate(pos);
         e->draw(&p);
@@ -307,7 +306,7 @@ void ScorePager::alignLastPageSystems()
 
 static bool pageElementLessThan(const PageElement &e1, const PageElement &e2)
 {
-    return Ms::elementLessThan(e1.E, e2.E) && (e1.P->no() < e2.P->no());
+    return Ms::elementLessThan(e1.E, e2.E) && (e1.PageIdx < e2.PageIdx);
 }
 
 void ScorePager::addPageItems(QVector<PageElement> &elements,
@@ -329,7 +328,7 @@ void ScorePager::addPageItems(QVector<PageElement> &elements,
             QList<Ms::Element *> items = page->items(bounds);
             for(Ms::Element *el : items)
             {
-                elements.push_back(PageElement(el, page));
+                elements.push_back(PageElement(el, i));
             }
             pageOffets.append(pageOffset);
             prevPage = page;

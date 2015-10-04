@@ -24,10 +24,10 @@ class QAction;
 struct PageElement
 {
     Ms::Element *E;
-    Ms::Page *P;
+    int PageIdx;
     
-    PageElement() : E(nullptr), P(nullptr) {}
-    PageElement(Ms::Element *e, Ms::Page *p) : E(e), P(p) {}
+    PageElement() : E(nullptr), PageIdx(0) {}
+    PageElement(Ms::Element *e, int pageIdx) : E(e), PageIdx(pageIdx) {}
 };
 
 // Presents single pages from a score.
