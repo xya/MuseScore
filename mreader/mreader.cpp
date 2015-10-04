@@ -69,6 +69,9 @@ int main(int argc, char **argv)
 
 ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
 {
+    m_lastScreenState = windowState();
+    
+    // Set up pager actions.
     m_previousPage = pagerAction("Previous page",
                                  QKeySequence::MoveToPreviousPage,
                                  SLOT(previousPage()));
@@ -86,6 +89,17 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
                                         QKeySequence(Qt::Key_I),
                                         Pager.showInstrumentNames(),
                                         SLOT(setShowInstrumentNames(bool)));
+    
+    // Set up fullscreen action.
+    m_fullscreen = new QAction("Fullscreen", this);
+    m_fullscreen->setShortcut(QKeySequence(Qt::Key_F));
+    m_fullscreen->setCheckable(true);
+    m_fullscreen->setChecked(m_lastScreenState == Qt::WindowFullScreen);
+    addAction(m_fullscreen);
+    QObject::connect(m_fullscreen, SIGNAL(triggered(bool)),
+                     this, SLOT(setFullscreen(bool)));
+    
+    // Other connections.
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
 }
 
@@ -119,6 +133,25 @@ QAction * ScoreWidget::pagerAction(QString text, QKeySequence key,
         QObject::connect(a, SIGNAL(triggered(bool)), &m_pager, slotName);
     }
     return a;
+}
+
+void ScoreWidget::setFullscreen(bool newVal)
+{
+    if (newVal)
+    {
+        m_lastScreenState = windowState();
+        setWindowState(Qt::WindowFullScreen);
+    }
+    else
+    {
+        setWindowState(m_lastScreenState);
+    }
+    m_fullscreen->setChecked(newVal);
+}
+
+void ScoreWidget::mouseDoubleClickEvent(QMouseEvent *)
+{
+    setFullscreen(!isFullscreen());
 }
 
 void ScoreWidget::wheelEvent(QWheelEvent *e)

@@ -140,10 +140,16 @@ public:
   ScoreWidget(ScorePager &pager);
   virtual ~ScoreWidget();
   
+  bool isFullscreen() const { return windowState() == Qt::WindowFullScreen; }
+  
 protected:
-  virtual void paintEvent(QPaintEvent*);
-  virtual void resizeEvent(QResizeEvent*);
-  virtual void wheelEvent(QWheelEvent*);
+  virtual void paintEvent(QPaintEvent*) override;
+  virtual void resizeEvent(QResizeEvent*) override;
+  virtual void mouseDoubleClickEvent(QMouseEvent*) override;
+  virtual void wheelEvent(QWheelEvent*) override;
+  
+private slots:
+  void setFullscreen(bool newVal);
   
 private:
   QAction *pagerAction(QString text, QKeySequence key,
@@ -160,6 +166,8 @@ private:
   QAction *m_zoomOut;
   QAction *m_twoSided;
   QAction *m_showInstrumentNames;
+  QAction *m_fullscreen;
+  Qt::WindowStates m_lastScreenState;
 };
 
 #endif
