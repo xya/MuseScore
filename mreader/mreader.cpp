@@ -145,7 +145,10 @@ bool ScorePager::loadScore(QString path)
     m_workingScore->setShowVBox(false);
     m_workingScore->setShowUnprintable(false);
     m_workingScore->setShowInvisible(false);
-    m_workingScore->setShowInstrumentNames(false);
+    if (m_workingScore->parts().size() < 2)
+    {
+        m_workingScore->setShowInstrumentNames(false);
+    }
     return true;
 }
 
