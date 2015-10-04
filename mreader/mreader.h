@@ -87,7 +87,11 @@ signals:
   void updated();
   
 private:
+  // Recalculate the layout of the whole score.
   void updateLayout();
+  
+  // Try to align the last page's systems with the previous page's.
+  void alignLastPageSystems();
   
   Ms::MScore &m_app;
   Ms::Score *m_score;

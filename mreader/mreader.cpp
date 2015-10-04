@@ -4,6 +4,7 @@
 #include "mreader.h"
 #include "libmscore/element.h"
 #include "libmscore/page.h"
+#include "libmscore/system.h"
 
 namespace Ms {
 QString revision;
@@ -237,7 +238,55 @@ void ScorePager::updateLayout()
     m_workingScore->setPrinting(true);
     m_workingScore->setLayoutAll(true);
     m_workingScore->update();
+    alignLastPageSystems();
+    
+    // Adjust the page index when the number of pages decreases.
+    if (m_pageIdx >= m_workingScore->pages().size())
+    {
+        m_pageIdx = m_workingScore->pages().size() - 1;
+    }
+    
     emit updated();
+}
+
+void ScorePager::alignLastPageSystems()
+{
+    // We can only align a page's systems if there is a previous page.
+    if (numPhysPages() < 2)
+        return;
+    
+    // Determine the previous page's system distances.
+    Ms::Page *prevPage = m_workingScore->pages().value(numPhysPages() - 2);
+    QVector<qreal> prevDistances;
+    for (Ms::System *sys : *prevPage->systems())
+    {
+        prevDistances.append(sys->addStretch() ? sys->stretchDistance() : 0.0);
+    }
+    
+    // Align all systems in the page.
+    int i = 0;
+    qreal yOffset = 0;
+    Ms::Page *page = m_workingScore->pages().value(numPhysPages() - 1);
+    for (Ms::System *sys : *page->systems())
+    {
+        // Apply any vertical offset.
+        sys->move(QPointF(0.0, yOffset));
+        
+        // Reduce the system's stretch distance if it is larger than the
+        // corresponding system on the previous page.
+        if (i >= prevDistances.size())
+            break;
+        qreal prevDist = prevDistances[i];
+        qreal dist = sys->addStretch() ? sys->stretchDistance() : 0.0;
+        if (dist > prevDist)
+        {
+            // Stretch is added after a system, it affects following systems.
+            sys->setStretchDistance(prevDist);
+            yOffset += (prevDist - dist);
+        }
+        
+        i++;
+    }
 }
 
 static bool pageElementLessThan(const PageElement &e1, const PageElement &e2)
