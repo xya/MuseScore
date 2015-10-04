@@ -316,9 +316,6 @@ void ScorePager::addPageItems(QVector<PageElement> &elements,
     pageOffets.clear();
     if (m_workingScore)
     {
-        QPointF interPageOffset(-m_workingScore->pageFormat()->oddRightMargin(),
-                                0);
-        interPageOffset *= Ms::MScore::DPI;
         QPointF pageOffset(0.0, 0.0);
         Ms::Page *prevPage = nullptr;
         for (int i = 0; i < numPagesShown(); i++)
@@ -327,7 +324,7 @@ void ScorePager::addPageItems(QVector<PageElement> &elements,
             if (!page)
                 break;
             if (prevPage)
-                pageOffset += (page->pos() - prevPage->pos() + interPageOffset);
+                pageOffset += QPointF(page->bbox().size().width(), 0.0);
             QRectF bounds = page->bbox();
             QList<Ms::Element *> items = page->items(bounds);
             for(Ms::Element *el : items)
