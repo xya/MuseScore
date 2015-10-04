@@ -84,6 +84,8 @@ public slots:
   void previousPage();
   void firstPage();
   void lastPage();
+  void zoomIn();
+  void zoomOut();
   
 signals:
   void updated();
@@ -123,6 +125,8 @@ private:
   QAction *m_nextPage;
   QAction *m_firstPage;
   QAction *m_lastPage;
+  QAction *m_zoomIn;
+  QAction *m_zoomOut;
 };
 
 #endif

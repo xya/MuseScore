@@ -54,14 +54,20 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     m_nextPage = new QAction("Next page", this);
     m_firstPage = new QAction("First page", this);
     m_lastPage = new QAction("Last page", this);
+    m_zoomIn = new QAction("Zoom in", this);
+    m_zoomOut = new QAction("Zoom out", this);
     m_previousPage->setShortcut(QKeySequence::MoveToPreviousPage);
     m_nextPage->setShortcut(QKeySequence::MoveToNextPage);
     m_firstPage->setShortcut(QKeySequence::MoveToStartOfDocument);
     m_lastPage->setShortcut(QKeySequence::MoveToEndOfDocument);
+    m_zoomIn->setShortcut(QKeySequence::ZoomIn);
+    m_zoomOut->setShortcut(QKeySequence::ZoomOut);
     addAction(m_previousPage);
     addAction(m_nextPage);
     addAction(m_firstPage);
     addAction(m_lastPage);
+    addAction(m_zoomIn);
+    addAction(m_zoomOut);
     QObject::connect(m_previousPage, SIGNAL(triggered(bool)),
                      &Pager, SLOT(previousPage()));
     QObject::connect(m_nextPage, SIGNAL(triggered(bool)),
@@ -70,6 +76,10 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
                      &Pager, SLOT(firstPage()));
     QObject::connect(m_lastPage, SIGNAL(triggered(bool)),
                      &Pager, SLOT(lastPage()));
+    QObject::connect(m_zoomIn, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(zoomIn()));
+    QObject::connect(m_zoomOut, SIGNAL(triggered(bool)),
+                     &Pager, SLOT(zoomOut()));
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
 }
 
@@ -353,4 +363,14 @@ void ScorePager::lastPage()
     if (m_twoSided)
         lastPageIndex = (lastPageIndex / numPagesShown()) * numPagesShown();
     setPageIndex(lastPageIndex);
+}
+
+void ScorePager::zoomIn()
+{
+    setScale(scale() + 0.1);
+}
+
+void ScorePager::zoomOut()
+{
+    setScale(scale() - 0.1);
 }
