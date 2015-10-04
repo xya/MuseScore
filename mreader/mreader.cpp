@@ -26,6 +26,7 @@
 #include "libmscore/chordrest.h"
 #include "libmscore/element.h"
 #include "libmscore/excerpt.h"
+#include "libmscore/instrument.h"
 #include "libmscore/lyrics.h"
 #include "libmscore/measure.h"
 #include "libmscore/page.h"
@@ -310,7 +311,7 @@ void ScorePager::setConcertPitch(bool newVal)
     if (newVal != m_concertPitch)
     {
         m_concertPitch = newVal;
-        updateStyle();
+        loadPart(m_partIdx);
     }
 }
 
@@ -417,6 +418,14 @@ void ScorePager::loadPart(int partIdx)
     {
         removeLyrics(m_workingScore.get());
     }
+    
+    // Transpose key signatures for concert pitch.
+    bool scoreConcertPitch = m_workingScore->styleB(Ms::StyleIdx::concertPitch);
+    if (scoreConcertPitch != m_concertPitch)
+    {
+        transposeKeySignatures(m_workingScore.get(), scoreConcertPitch);
+    }
+    
     emit partChanged();
     updateStyle();
 }
@@ -440,6 +449,23 @@ void ScorePager::removeLyrics(Ms::Score *score)
                 }
             }
         }
+    }
+}
+
+void ScorePager::transposeKeySignatures(Ms::Score *score, bool flip)
+{
+    for (Ms::Part *part : score->parts())
+    {
+        Ms::Instrument *instr = part->instrument();
+        Ms::Interval interval = instr->transpose();
+        if (interval.isZero())
+            continue;
+        if (flip)
+            interval.flip();
+        int tickEnd = score->lastSegment() ? score->lastSegment()->tick() : 0;
+        score->transposeKeys(part->startTrack() / Ms::VOICES,
+                             part->endTrack() / Ms::VOICES, 0, tickEnd,
+                             interval);
     }
 }
 

@@ -132,6 +132,7 @@ signals:
 private:
   void loadPart(int partIdx);
   void removeLyrics(Ms::Score *score);
+  void transposeKeySignatures(Ms::Score *score, bool flip);
   void updateStyle();
   
   // Recalculate the layout of the whole score.
