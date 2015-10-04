@@ -228,28 +228,31 @@ void ScorePager::setScale(double newScale)
 
 void ScorePager::updateLayout()
 {
-    double widthInch = m_pageSize.width() / Ms::MScore::DPI;
+    double twoSidedMod = m_twoSided ? 0.5 : 1.0;
+    double widthInch = (m_pageSize.width() * twoSidedMod) / Ms::MScore::DPI;
     double heightInch = m_pageSize.height() / Ms::MScore::DPI;
-    double f  = 1.0 / Ms::INCH;
-    double marginVertMm = 10.0;
-    double marginHorMm = 10.0;
-    double staffSpaceMm = m_scale * 2.0;
-    if (m_twoSided)
-        widthInch *= 0.5;
+    double marginVertInch = 0.005 * heightInch;
+    double marginHorInch = 0.015 * widthInch / twoSidedMod;
+    double marginHorInnerInch = marginHorInch * twoSidedMod;
+    double staffSpaceInch = m_scale * 0.08;
 
     Ms::PageFormat pf;
-    pf.setEvenTopMargin(marginVertMm * f);
-    pf.setEvenBottomMargin(marginVertMm * f);
-    pf.setEvenLeftMargin(marginHorMm * f);
-    pf.setOddTopMargin(marginVertMm * f);
-    pf.setOddBottomMargin(marginVertMm * f);
-    pf.setOddLeftMargin(marginHorMm * f);
+    pf.setEvenTopMargin(marginVertInch);
+    pf.setEvenBottomMargin(marginVertInch);
+    pf.setEvenLeftMargin(marginHorInnerInch);
+    pf.setOddTopMargin(marginVertInch);
+    pf.setOddBottomMargin(marginVertInch);
+    pf.setOddLeftMargin(marginHorInch);
     pf.setSize(QSizeF(widthInch, heightInch));
-    pf.setPrintableWidth(widthInch - (marginHorMm * 2.0 * f));
+    pf.setPrintableWidth(widthInch - marginHorInch - marginHorInnerInch);
     pf.setTwosided(m_twoSided);
+    //qDebug("Width %f PW %f ELM %f ERM %f OLM %f ORM %f",
+    //       pf.width(), pf.printableWidth(),
+    //       pf.evenLeftMargin(), pf.evenRightMargin(),
+    //       pf.oddLeftMargin(), pf.oddRightMargin());
 
     m_workingScore->setPageFormat(pf);
-    m_workingScore->style()->setSpatium(staffSpaceMm * f * Ms::MScore::DPI);
+    m_workingScore->style()->setSpatium(staffSpaceInch * Ms::MScore::DPI);
     m_workingScore->setPrinting(true);
     m_workingScore->setLayoutAll(true);
     m_workingScore->update();
