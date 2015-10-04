@@ -133,7 +133,11 @@ bool ScorePager::loadScore(QString path)
         m_score = nullptr;
         return false;
     }
+    Ms::MStyle *style = m_score->style();
     m_score->setLayoutMode(Ms::LayoutMode::PAGE);
+    style->set(Ms::StyleIdx::showFooter, false);
+    style->set(Ms::StyleIdx::showHeader, false);
+    style->set(Ms::StyleIdx::showPageNumber, false);
     return true;
 }
 
