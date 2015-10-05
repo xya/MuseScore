@@ -21,6 +21,7 @@
 #define MSCORE_MREADER_MREADER_H
 
 #include <QApplication>
+#include <QAction>
 #include <QFileInfo>
 #include <QMouseEvent>
 #include <QColor>
@@ -213,7 +214,25 @@ private:
   QAction *m_downSemitone;
   QAction *m_upOctave;
   QAction *m_downOctave;
+  QAction *m_showAllParts;
+  QVector<QAction *> m_showPartN;
   Qt::WindowStates m_lastScreenState;
+};
+
+class SelectPartAction : public QAction
+{
+Q_OBJECT
+public:
+  SelectPartAction(int partID, QObject *parent);
+  
+signals:
+  void partSelected(int partID);
+  
+public slots:
+  void selectPart();
+  
+private:
+  int m_partID;
 };
 
 #endif

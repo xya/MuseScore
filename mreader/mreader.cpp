@@ -123,6 +123,22 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
     QObject::connect(m_fullscreen, SIGNAL(triggered(bool)),
                      this, SLOT(setFullscreen(bool)));
     
+    // Set up show part actions.
+    m_showAllParts = new SelectPartAction(-1, this);
+    m_showAllParts->setShortcut(QKeySequence(Qt::Key_0));
+    addAction(m_showAllParts);
+    QObject::connect(m_showAllParts, SIGNAL(partSelected(int)),
+                     &Pager, SLOT(setPartIndex(int)));
+    for (int i = 0; i < 9; i++)
+    {
+        SelectPartAction *pa = new SelectPartAction(i, this);
+        pa->setShortcut(QKeySequence(Qt::Key_0 + i + 1));
+        addAction(pa);
+        QObject::connect(pa, SIGNAL(partSelected(int)),
+                         &Pager, SLOT(setPartIndex(int)));
+        m_showPartN.append(pa);
+    }
+    
     // Other connections.
     QObject::connect(&Pager, SIGNAL(updated()), this, SLOT(update()));
     QObject::connect(&Pager, SIGNAL(partChanged()), this, SLOT(updateTitle()));
@@ -718,4 +734,21 @@ void ScorePager::upOctave()
 void ScorePager::downOctave()
 {
     setSemitoneDelta(semitoneDelta() - 12);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+SelectPartAction::SelectPartAction(int partID, QObject *parent)
+    : QAction(parent), m_partID(partID)
+{
+    if (partID >= 0)
+        setText(QString("Show part %1").arg(partID));
+    else
+        setText("Show all parts");
+    QObject::connect(this, SIGNAL(triggered(bool)), this, SLOT(selectPart()));
+}
+
+void SelectPartAction::selectPart()
+{
+    emit partSelected(m_partID);
 }
