@@ -102,14 +102,16 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
                                         Pager.showInstrumentNames(),
                                         SLOT(setShowInstrumentNames(bool)));
     m_upSemitone = pagerAction("Up one semitone",
-                               QKeySequence::SelectPreviousLine,
+                               QKeySequence(Qt::SHIFT + Qt::Key_Up),
                                SLOT(upSemitone()));
     m_downSemitone = pagerAction("Down one semitone",
-                                 QKeySequence::SelectNextLine,
+                                 QKeySequence(Qt::SHIFT + Qt::Key_Down),
                                  SLOT(downSemitone()));
-    m_upOctave = pagerAction("Up one octave", QKeySequence::SelectPreviousPage,
+    m_upOctave = pagerAction("Up one octave",
+                             QKeySequence(Qt::CTRL + Qt::Key_Up),
                              SLOT(upOctave()));
-    m_downOctave = pagerAction("Down one octave", QKeySequence::SelectNextPage,
+    m_downOctave = pagerAction("Down one octave",
+                               QKeySequence(Qt::CTRL + Qt::Key_Down),
                                SLOT(downOctave()));
     
     // Set up fullscreen action.
@@ -211,13 +213,23 @@ void ScoreWidget::mouseDoubleClickEvent(QMouseEvent *)
 
 void ScoreWidget::wheelEvent(QWheelEvent *e)
 {
-    int pages = -qRound(e->delta() / 120.0);
-    for (int i = 0; i < qAbs(pages); i++)
+    if (e->modifiers() & Qt::ControlModifier)
     {
-        if (pages > 0)
-            m_pager.nextPage();
-        else
-            m_pager.previousPage();
+        // Zoom.
+        double delta = e->delta() / 1200.0;
+        m_pager.setScale(m_pager.scale() + delta);
+    }
+    else
+    {
+        // Scroll pages.
+        int pages = -qRound(e->delta() / 120.0);
+        for (int i = 0; i < qAbs(pages); i++)
+        {
+            if (pages > 0)
+                m_pager.nextPage();
+            else
+                m_pager.previousPage();
+        }
     }
 }
 
