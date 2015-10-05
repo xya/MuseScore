@@ -88,6 +88,9 @@ public:
   // Whether to show instrument names or not.
   bool showInstrumentNames() const { return m_showInstrumentNames; }
   
+  // How many semitones to transpose by.
+  int semitoneDelta() const { return m_semitoneDelta; }
+  
   // Page size.
   QSizeF pageSize() const { return m_pageSize; }
   void setPageSize(QSizeF newSize);
@@ -118,12 +121,17 @@ public slots:
   void lastPage();
   void zoomIn();
   void zoomOut();
+  void upSemitone();
+  void downSemitone();
+  void upOctave();
+  void downOctave();
   void setTwoSided(bool newVal);
   void setConcertPitch(bool newVal);
   void setShowLyrics(bool newVal);
   void setShowInstrumentNames(bool newVal);
   void setPageIndex(int newIndex);
   void setPartIndex(int newIndex);
+  void setSemitoneDelta(int newVal);
   
 signals:
   void updated();
@@ -133,6 +141,7 @@ private:
   void loadPart(int partIdx);
   void removeLyrics(Ms::Score *score);
   void transposeKeySignatures(Ms::Score *score, bool flip);
+  void transposeAll(Ms::Score *score, int semitones);
   void updateStyle();
   
   // Recalculate the layout of the whole score.
@@ -155,6 +164,7 @@ private:
   bool m_soloInstrument;
   bool m_showLyrics;
   bool m_concertPitch;
+  int m_semitoneDelta;
 };
 
 class ScoreWidget : public QWidget
@@ -199,6 +209,10 @@ private:
   QAction *m_showLyrics;
   QAction *m_showInstrumentNames;
   QAction *m_fullscreen;
+  QAction *m_upSemitone;
+  QAction *m_downSemitone;
+  QAction *m_upOctave;
+  QAction *m_downOctave;
   Qt::WindowStates m_lastScreenState;
 };
 

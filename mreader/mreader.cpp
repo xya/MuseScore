@@ -33,6 +33,7 @@
 #include "libmscore/part.h"
 #include "libmscore/staff.h"
 #include "libmscore/system.h"
+#include "libmscore/utils.h"
 
 namespace Ms {
 QString revision;
@@ -100,6 +101,16 @@ ScoreWidget::ScoreWidget(ScorePager &Pager) : QWidget(), m_pager(Pager)
                                         QKeySequence(Qt::Key_I),
                                         Pager.showInstrumentNames(),
                                         SLOT(setShowInstrumentNames(bool)));
+    m_upSemitone = pagerAction("Up one semitone",
+                               QKeySequence::SelectPreviousLine,
+                               SLOT(upSemitone()));
+    m_downSemitone = pagerAction("Down one semitone",
+                                 QKeySequence::SelectNextLine,
+                                 SLOT(downSemitone()));
+    m_upOctave = pagerAction("Up one octave", QKeySequence::SelectPreviousPage,
+                             SLOT(upOctave()));
+    m_downOctave = pagerAction("Down one octave", QKeySequence::SelectNextPage,
+                               SLOT(downOctave()));
     
     // Set up fullscreen action.
     m_fullscreen = new QAction("Fullscreen", this);
@@ -246,7 +257,8 @@ void ScoreWidget::paintEvent(QPaintEvent *e)
 
 ScorePager::ScorePager(Ms::MScore &App, QObject *parent) : QObject(parent),
     m_app(App), m_twoSided(true), m_alignSystems(true),
-    m_showInstrumentNames(true), m_soloInstrument(false), m_showLyrics(true)
+    m_showInstrumentNames(true), m_soloInstrument(false), m_showLyrics(true),
+    m_semitoneDelta(0)
 {
     m_partIdx = -1;
     m_pageIdx = 0;
@@ -369,6 +381,15 @@ void ScorePager::setScale(double newScale)
     }
 }
 
+void ScorePager::setSemitoneDelta(int newVal)
+{
+    if (m_semitoneDelta != newVal)
+    {
+        m_semitoneDelta = newVal;
+        loadPart(m_partIdx);
+    }
+}
+
 void ScorePager::loadPart(int partIdx)
 {
     Ms::Score *base = m_score.get();
@@ -426,6 +447,12 @@ void ScorePager::loadPart(int partIdx)
         transposeKeySignatures(m_workingScore.get(), scoreConcertPitch);
     }
     
+    // Transpose by a user-defined number of semitones.
+    if (m_semitoneDelta != 0)
+    {
+        transposeAll(m_workingScore.get(), m_semitoneDelta);
+    }
+    
     emit partChanged();
     updateStyle();
 }
@@ -467,6 +494,35 @@ void ScorePager::transposeKeySignatures(Ms::Score *score, bool flip)
                              part->endTrack() / Ms::VOICES, 0, tickEnd,
                              interval);
     }
+}
+
+void ScorePager::transposeAll(Ms::Score *score, int semitones)
+{
+    bool flip = semitones < 0;
+    Ms::TransposeMode mode = Ms::TransposeMode::BY_INTERVAL;
+    Ms::TransposeDirection dir = flip ? Ms::TransposeDirection::DOWN
+                                      : Ms::TransposeDirection::UP;
+    Ms::Key key = Ms::Key::C;
+    semitones = qAbs(semitones);
+    int octaves = semitones / 12;
+    semitones = semitones % 12;
+    int steps = Ms::chromatic2diatonic(semitones);
+    int semitoneIID = Ms::searchInterval(steps, semitones);
+    if ((semitoneIID < 0) && (semitones > 0))
+        return;
+    int octaveIID = Ms::searchInterval(7, 12);
+    if ((octaveIID < 0) && (octaves > 0))
+        return;
+    score->cmdSelectAll();
+    for (int i = 0; i < octaves; i++)
+    {
+        score->transpose(mode, dir, key, octaveIID, true, false, false);
+    }
+    if (semitones > 0)
+    {
+        score->transpose(mode, dir, key, semitoneIID, true, false, false);
+    }
+    score->deselectAll();
 }
 
 void ScorePager::updateStyle()
@@ -630,4 +686,24 @@ void ScorePager::zoomIn()
 void ScorePager::zoomOut()
 {
     setScale(scale() - 0.1);
+}
+
+void ScorePager::upSemitone()
+{
+    setSemitoneDelta(semitoneDelta() + 1);
+}
+
+void ScorePager::downSemitone()
+{
+    setSemitoneDelta(semitoneDelta() - 1);
+}
+
+void ScorePager::upOctave()
+{
+    setSemitoneDelta(semitoneDelta() + 12);
+}
+
+void ScorePager::downOctave()
+{
+    setSemitoneDelta(semitoneDelta() - 12);
 }
